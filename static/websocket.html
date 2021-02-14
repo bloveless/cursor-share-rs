@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat!</title>
+
+    <meta charset="utf-8"/>
+
+    <script>
+        'use strict'
+
+        window.onload = () => {
+            let conn = null;
+            let cursors = {};
+
+            const log = (msg) => {
+                div_log.innerHTML += msg + '<br>'
+                div_log.scroll(0, div_log.scrollTop + 1000)
+            }
+
+            const connect = () => {
+                disconnect()
+
+                const wsUri =
+                    (window.location.protocol === 'https:' ? 'wss://' : 'ws://') +
+                    window.location.host +
+                    '/ws/'
+
+                conn = new WebSocket(wsUri)
+                log('Connecting...')
+
+                conn.onopen = function () {
+                    log('Connected.')
+                    update_ui()
+                }
+
+                conn.onmessage = function (e) {
+                    const message = JSON.parse(e.data);
+
+                    if (message.event_type === "connected") {
+                        // don't need to do anything visually when someone connects
+                        log(message.message);
+                    }
+
+                    if (message.event_type === "disconnect") {
+                        // when someone disconnects we should remove their cursor
+                        cursors[message.sender].remove();
+                        delete cursors[message.sender];
+                    }
+
+                    if (message.event_type === "someone_joined") {
+                        // just logging is fine
+                        log(message.message);
+                    }
+
+                    if (message.event_type === "text") {
+                        // someone sent a text message so logging is fine
+                        log('Received: ' + message.message + ' from ' + message.sender);
+                    }
+
+                    if (message.event_type === "mousemove") {
+                        // create the users div if it doesn't exist and update it's value if it does already exist
+                        if (Object.keys(cursors).includes(message.sender)) {
+                            cursors[message.sender].style.top = message.mouse_y + 'px';
+                            cursors[message.sender].style.left = message.mouse_x + 'px';
+                        }
+                        else {
+                            const div = document.createElement('div');
+                            div.className = 'another-persons-cursor';
+                            div.style.top = message.mouse_y + 'px';
+                            div.style.left = message.mouse_x + 'px';
+
+                            document.body.appendChild(div);
+
+                            cursors[message.sender] = div;
+                        }
+                    }
+                }
+
+                conn.onclose = function () {
+                    log('Disconnected.')
+                    conn = null
+
+                    update_ui()
+                }
+            }
+
+            const disconnect = () => {
+                if (conn) {
+                    log('Disconnecting...')
+                    conn.close()
+                    conn = null
+
+                    // if I've disconnected I should remove everyone elses cursors from my screen
+                    Object.keys(cursors).forEach((id) => {
+                        cursors[id].remove();
+                        delete cursors[id];
+                    });
+
+                    update_ui()
+                }
+            }
+
+            const update_ui = () => {
+                if (!conn) {
+                    span_status.textContent = 'disconnected'
+                    btn_connect.textContent = 'Connect'
+                } else {
+                    span_status.textContent = `connected (${conn.protocol})`
+                    btn_connect.textContent = 'Disconnect'
+                }
+            }
+
+            btn_connect.onclick = () => {
+                if (!conn) {
+                    connect()
+                } else {
+                    disconnect()
+                }
+
+                update_ui()
+            }
+
+            btn_send.onclick = () => {
+                if (!conn) return
+
+                const event = JSON.stringify({
+                    event_type: "text",
+                    message: input_text.value,
+                })
+
+                log('Sending: ' + event)
+                conn.send(event)
+
+                input_text.value = ''
+                input_text.focus()
+            }
+
+            input_text.onkeyup = (e) => {
+                if (e.key === 'Enter') {
+                    btn_send.click()
+                }
+            }
+
+            let lastMouseX = 0, lastMouseY = 0;
+            let timeout = null;
+
+            document.onmousemove = (e) => {
+                if (!conn) return;
+
+                lastMouseX = e.pageX;
+                lastMouseY = e.pageY;
+
+                if (timeout != null) return;
+
+                timeout = setTimeout(() => {
+                    if (!conn) return;
+
+                    const mousemove = JSON.stringify({
+                        event_type: "mousemove",
+                        mouse_x: lastMouseX,
+                        mouse_y: lastMouseY,
+                    });
+
+                    conn.send(mousemove);
+                    timeout = null;
+                }, 16);
+            }
+        }
+    </script>
+
+    <style type="text/css" rel="stylesheet">
+        .another-persons-cursor {
+            display: inline-block;
+            position: absolute;
+            background: black;
+            height: 16px;
+            width: 16px;
+        }
+    </style>
+</head>
+
+<body>
+<h3>Chat!</h3>
+<div>
+    <button id="btn_connect">Connect</button>
+    Status: <span id="span_status">disconnected</span>
+</div>
+
+<div id="div_log" style="width: 20em; height: 15em; overflow: auto; border: 1px solid black"></div>
+
+<input id="input_text" type="text"/>
+<input id="btn_send" type="button" value="Send"/>
+</body>
+</html>
