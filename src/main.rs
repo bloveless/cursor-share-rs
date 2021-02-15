@@ -5,6 +5,7 @@ use actix_files as fs;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use uuid::Uuid;
+use actix_web::middleware::Logger;
 
 mod server;
 
@@ -102,10 +103,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             Ok(msg) => msg,
         };
 
-        if let ws::Message::Text(text) = &msg {
-            println!("WEBSOCKET MESSAGE: {:?}", text);
-        }
-
         match msg {
             ws::Message::Ping(msg) => {
                 self.hb = Instant::now();
@@ -162,6 +159,7 @@ impl WsChatSession {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    std::env::set_var("RUST_LOG", "actix_web=info,actix=info");
     env_logger::init();
 
     // Start chat server actor
@@ -171,6 +169,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .data(server.clone())
+            .wrap(Logger::default())
             // redirect to websocket.html
             .service(web::resource("/").route(web::get().to(|| {
                 HttpResponse::Found()
@@ -182,7 +181,7 @@ async fn main() -> std::io::Result<()> {
             // static resources
             .service(fs::Files::new("/static/", "static/"))
     })
-        .bind("127.0.0.1:8080")?
+        .bind("0.0.0.0:8080")?
         .run()
         .await
 }

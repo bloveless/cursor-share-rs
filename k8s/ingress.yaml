@@ -1,0 +1,24 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cursor-share-rs
+  namespace: cursor-share-rs
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/redirect-entry-point: https
+spec:
+  tls:
+  - hosts:
+    - "cursor-share.ddns.net"
+    secretName: cursor-share-rs
+  rules:
+  - host: "cursor-share.ddns.net"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: cursor-share-rs
+            port:
+              number: 8080

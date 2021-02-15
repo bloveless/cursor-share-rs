@@ -10,14 +10,19 @@
 
         window.onload = () => {
             let conn = null;
-            let cursors = {};
+            const cursors = {};
+            const span_status = document.getElementById('span_status');
+            const btn_send = document.getElementById('btn_send');
+            const div_log = document.getElementById('div_log');
+            const input_text = document.getElementById('input_text');
+            const btn_disconnect = document.getElementById('btn_disconnect');
 
             const log = (msg) => {
                 div_log.innerHTML += msg + '<br>'
                 div_log.scroll(0, div_log.scrollTop + 1000)
             }
 
-            const connect = () => {
+            const connect = (name) => {
                 disconnect()
 
                 const wsUri =
@@ -29,7 +34,12 @@
                 log('Connecting...')
 
                 conn.onopen = function () {
-                    log('Connected.')
+                    conn.send(JSON.stringify({
+                        event_type: "connect",
+                        name,
+                    }));
+
+                    log(`Connected as ${name}`)
                     update_ui()
                 }
 
@@ -43,8 +53,10 @@
 
                     if (message.event_type === "disconnect") {
                         // when someone disconnects we should remove their cursor
-                        cursors[message.sender].remove();
-                        delete cursors[message.sender];
+                        if (Object.keys(cursors).includes(message.sender_id)) {
+                            cursors[message.sender_id].remove();
+                            delete cursors[message.sender_id];
+                        }
                     }
 
                     if (message.event_type === "someone_joined") {
@@ -54,24 +66,50 @@
 
                     if (message.event_type === "text") {
                         // someone sent a text message so logging is fine
-                        log('Received: ' + message.message + ' from ' + message.sender);
+                        log('Received: ' + message.message + ' from ' + (message.sender_name ?? message.sender_id));
                     }
 
                     if (message.event_type === "mousemove") {
                         // create the users div if it doesn't exist and update it's value if it does already exist
-                        if (Object.keys(cursors).includes(message.sender)) {
-                            cursors[message.sender].style.top = message.mouse_y + 'px';
-                            cursors[message.sender].style.left = message.mouse_x + 'px';
+                        if (Object.keys(cursors).includes(message.sender_id)) {
+                            cursors[message.sender_id].style.top = message.mouse_y + 'px';
+                            cursors[message.sender_id].style.left = message.mouse_x + 'px';
                         }
                         else {
-                            const div = document.createElement('div');
-                            div.className = 'another-persons-cursor';
+                            const template = document.getElementById('cursor-template');
+                            const div = template.cloneNode(true);
+                            div.id = message.sender_id;
                             div.style.top = message.mouse_y + 'px';
                             div.style.left = message.mouse_x + 'px';
 
+                            const colorIndex = (message.sender_id.split('').reduce((acc, cur, index) => {
+                                return acc + message.sender_id.charCodeAt(index)
+                            }, 0) % 5) + 1;
+
+                            switch (colorIndex) {
+                                case 1:
+                                    div.className = `${div.className} one`;
+                                    break;
+                                case 2:
+                                    div.className = `${div.className} two`;
+                                    break;
+                                case 3:
+                                    div.className = `${div.className} three`;
+                                    break;
+                                case 4:
+                                    div.className = `${div.className} four`;
+                                    break;
+                                case 5:
+                                    div.className = `${div.className} five`;
+                                    break;
+                            }
+
+                            const span = div.getElementsByTagName('span');
+                            span[0].textContent = (message.sender_name ?? message.sender_id);
+
                             document.body.appendChild(div);
 
-                            cursors[message.sender] = div;
+                            cursors[message.sender_id] = div;
                         }
                     }
                 }
@@ -102,33 +140,47 @@
 
             const update_ui = () => {
                 if (!conn) {
-                    span_status.textContent = 'disconnected'
-                    btn_connect.textContent = 'Connect'
+                    span_status.textContent = 'disconnected';
+                    btn_send.value = 'Connect';
+                    btn_disconnect.style.display = 'none';
+                    div_log.className = 'disabled';
+                    input_text.value = '';
+                    input_text.placeholder = 'Your Name';
                 } else {
-                    span_status.textContent = `connected (${conn.protocol})`
-                    btn_connect.textContent = 'Disconnect'
+                    span_status.textContent = 'connected';
+                    btn_send.value = 'Send';
+                    btn_disconnect.style.display = '';
+                    div_log.className = '';
+                    input_text.value = '';
+                    input_text.placeholder = 'Message';
                 }
-            }
+            };
 
-            btn_connect.onclick = () => {
-                if (!conn) {
-                    connect()
-                } else {
-                    disconnect()
-                }
-
-                update_ui()
-            }
+            btn_disconnect.onclick = () => {
+                disconnect();
+            };
 
             btn_send.onclick = () => {
-                if (!conn) return
+                if (!conn) {
+                    const name = document.getElementById('input_text');
+                    if (name.value === '') {
+                        alert('Gimme your name!');
+                        return;
+                    }
+
+                    connect(name.value);
+
+                    update_ui();
+
+                    return;
+                }
 
                 const event = JSON.stringify({
                     event_type: "text",
                     message: input_text.value,
                 })
 
-                log('Sending: ' + event)
+                log('Sending: ' + input_text.value)
                 conn.send(event)
 
                 input_text.value = ''
@@ -169,26 +221,101 @@
     </script>
 
     <style type="text/css" rel="stylesheet">
+        :root {
+            --color-one: #CF9893;
+            --color-two: #BC7C9C;
+            --color-three: #A96DA3;
+            --color-four: #7A5980;
+            --color-five: #3B3B58;
+        }
+
+        #cursor-template {
+            display: none;
+        }
+
+        #div_log {
+            width: 20em;
+            height: 15em;
+            overflow: auto;
+            border: 1px solid black;
+        }
+
+        #div_log.disabled {
+            opacity: .25;
+        }
+
         .another-persons-cursor {
             display: inline-block;
             position: absolute;
-            background: black;
             height: 16px;
             width: 16px;
+            color: red;
         }
+
+        .another-persons-cursor span {
+            position: relative;
+            top: -7px;
+            left: 12px;
+            white-space: nowrap;
+        }
+
+        .another-persons-cursor.one {
+            color: var(--color-one);
+        }
+
+        .another-persons-cursor.one svg {
+            fill: var(--color-one);
+        }
+
+        .another-persons-cursor.two {
+            color: var(--color-two);
+        }
+
+        .another-persons-cursor.two svg {
+            fill: var(--color-two);
+        }
+
+        .another-persons-cursor.three {
+            color: var(--color-three);
+        }
+
+        .another-persons-cursor.three svg {
+            fill: var(--color-three);
+        }
+
+        .another-persons-cursor.four {
+            color: var(--color-four);
+        }
+
+        .another-persons-cursor.four svg {
+            fill: var(--color-four);
+        }
+
+        .another-persons-cursor.five {
+            color: var(--color-five);
+        }
+
+        .another-persons-cursor.five svg {
+            fill: var(--color-five);
+        }
+
     </style>
 </head>
 
 <body>
 <h3>Chat!</h3>
 <div>
-    <button id="btn_connect">Connect</button>
     Status: <span id="span_status">disconnected</span>
 </div>
 
-<div id="div_log" style="width: 20em; height: 15em; overflow: auto; border: 1px solid black"></div>
+<div id="div_log" class="disabled"></div>
 
-<input id="input_text" type="text"/>
-<input id="btn_send" type="button" value="Send"/>
+<input id="input_text" placeholder="Your Name" type="text" />
+<input id="btn_send" type="button" value="Connect" />
+<input id="btn_disconnect" style="display: none;" type="button" value="Disconnect" />
+<div id="cursor-template" class="another-persons-cursor">
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M5 4.27l10.476 8.73h-6.542l-3.934 5.117v-13.847zm-2-4.27v24l6.919-9h11.081l-18-15z"/></svg>
+    <span>Username</span>
+</div>
 </body>
 </html>

@@ -39,6 +39,12 @@ pub struct ClientMessage {
 }
 
 #[derive(Deserialize, Clone)]
+struct ConnectMessage {
+    event_type: String,
+    name: String,
+}
+
+#[derive(Deserialize, Clone)]
 struct TextMessage {
     event_type: String,
     message: String,
@@ -46,7 +52,8 @@ struct TextMessage {
 
 #[derive(Serialize)]
 struct BroadcastTextMessage {
-    sender: Uuid,
+    sender_id: Uuid,
+    sender_name: String,
     event_type: String,
     message: String,
 }
@@ -60,7 +67,8 @@ struct MouseMessage {
 
 #[derive(Serialize)]
 struct BroadcastMouseMessage {
-    sender: Uuid,
+    sender_id: Uuid,
+    sender_name: String,
     event_type: String,
     mouse_x: isize,
     mouse_y: isize,
@@ -72,10 +80,15 @@ enum ChatMessage {
     TextMessage(TextMessage),
 }
 
+struct Profile {
+    name: Option<String>,
+    socket: Recipient<Message>,
+}
+
 /// `ChatServer` manages chat rooms and responsible for coordinating chat
 /// session. implementation is super primitive
 pub struct ChatServer {
-    sessions: HashMap<Uuid, Recipient<Message>>,
+    sessions: HashMap<Uuid, Profile>,
 }
 
 impl ChatServer {
@@ -89,20 +102,35 @@ impl ChatServer {
 impl ChatServer {
     /// Send message to all users in the room
     fn broadcast_message(&self, chat_message: ChatMessage, sender_id: Uuid) {
-        for (id, addr) in &self.sessions {
+        let sender_profile = self.sessions.get(&sender_id);
+
+        for (id, profile) in &self.sessions {
             if *id == sender_id {
                 continue;
             }
 
             let cm = chat_message.clone();
+
+            let sender_name = if let Some(p) = sender_profile {
+                if let Some(name) = p.name.clone() {
+                    name
+                } else {
+                    "system".to_string()
+                }
+            } else {
+                "system".to_string()
+            };
+
             let message = match cm {
                 ChatMessage::TextMessage(m) => serde_json::to_string(&BroadcastTextMessage {
-                    sender: sender_id,
+                    sender_id,
+                    sender_name: sender_name.to_string(),
                     event_type: m.event_type,
                     message: m.message,
                 }),
                 ChatMessage::MouseMessage(m) => serde_json::to_string(&BroadcastMouseMessage {
-                    sender: sender_id,
+                    sender_id,
+                    sender_name: sender_name.to_string(),
                     event_type: m.event_type,
                     mouse_x: m.mouse_x,
                     mouse_y: m.mouse_y,
@@ -110,7 +138,7 @@ impl ChatServer {
             };
 
             if let Ok(message) = message {
-                if let Err(e) = addr.do_send(Message(message.to_owned())) {
+                if let Err(e) = profile.socket.do_send(Message(message.to_owned())) {
                     println!("Unable to broadcast message. Error: {:?}", e);
                 }
             }
@@ -118,15 +146,21 @@ impl ChatServer {
     }
 
     fn send_message(&self, text_message: TextMessage, to_id: Uuid) {
-        if let Some(addr) = self.sessions.get(&to_id) {
+        if let Some(profile) = self.sessions.get(&to_id) {
+
+            let sender_name = match &profile.name {
+                Some(name) => name,
+                None => "system",
+            };
 
             let message = serde_json::to_string(&BroadcastTextMessage {
-                sender: Uuid::nil(),
+                sender_id: Uuid::nil(),
+                sender_name: sender_name.to_owned(),
                 event_type: text_message.event_type,
                 message: text_message.message,
             }).unwrap();
 
-            if let Err(e) = addr.do_send(Message(message.to_owned())) {
+            if let Err(e) = profile.socket.do_send(Message(message.to_owned())) {
                 println!("Unable to send message. Error: {:?}", e);
             }
         } else {
@@ -157,7 +191,7 @@ impl Handler<Connect> for ChatServer {
 
         // register session id with websocket
         let id = Uuid::new_v4();
-        self.sessions.insert(id, msg.addr);
+        self.sessions.insert(id, Profile { name: None, socket: msg.addr });
 
         // Notify the user of what their id is
         self.send_message(TextMessage {
@@ -175,8 +209,6 @@ impl Handler<Disconnect> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: Disconnect, _: &mut Context<Self>) {
-        println!("Someone disconnected: {}", msg.id);
-
         self.broadcast_message(ChatMessage::TextMessage(TextMessage {
             event_type: "disconnect".to_string(),
             message: "Someone disconnected".to_string(),
@@ -187,20 +219,21 @@ impl Handler<Disconnect> for ChatServer {
     }
 }
 
-
-
 /// Handler for Message message.
 impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Context<Self>) {
         if let Ok(mouse_message) = serde_json::from_str::<MouseMessage>(msg.msg.as_str()) {
-            println!("Sending mouse message");
             self.broadcast_message(ChatMessage::MouseMessage(mouse_message), msg.id);
         }
         else if let Ok(text_message) = serde_json::from_str::<TextMessage>(msg.msg.as_str()) {
-            println!("Sending text message");
             self.broadcast_message(ChatMessage::TextMessage(text_message), msg.id);
+        }
+        if let Ok(connect_message) = serde_json::from_str::<ConnectMessage>(msg.msg.as_str()) {
+            if let Some(profile) = self.sessions.get_mut(&msg.id) {
+                profile.name = Some(connect_message.name);
+            }
         }
     }
 }

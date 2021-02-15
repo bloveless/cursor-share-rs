@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cursor-share-rs-deployment
+  namespace: cursor-share-rs
+  labels:
+    app: cursor-share-rs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cursor-share-rs
+  template:
+    metadata:
+      labels:
+        app: cursor-share-rs
+    spec:
+      containers:
+      - name: cursor-share-rs
+        image: bloveless/cursor-share-rs:0.0.1-alpha.2
+        ports:
+        - containerPort: 8080
