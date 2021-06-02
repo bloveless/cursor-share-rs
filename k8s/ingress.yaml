@@ -9,10 +9,10 @@ metadata:
 spec:
   tls:
   - hosts:
-    - "cursor-share.ddns.net"
+    - "cursor-share.brennonloveless.com"
     secretName: cursor-share-rs
   rules:
-  - host: "cursor-share.ddns.net"
+  - host: "cursor-share.brennonloveless.com"
     http:
       paths:
       - pathType: Prefix
