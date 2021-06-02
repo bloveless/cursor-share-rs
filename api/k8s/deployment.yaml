@@ -17,6 +17,6 @@ spec:
     spec:
       containers:
       - name: cursor-share
-        image: bloveless/cursor-share-rs:0.0.1-alpha.2
+        image: bloveless/cursor-share-rs
         ports:
         - containerPort: 8080
