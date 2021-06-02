@@ -1,14 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: cursor-share-rs
-  namespace: cursor-share-rs
+  name: cursor-share
+  namespace: cursor-share
   labels:
-    app: cursor-share-rs
+    app: cursor-share
 spec:
   ports:
   - port: 8080
     protocol: TCP
   selector:
-    app: cursor-share-rs
+    app: cursor-share
 

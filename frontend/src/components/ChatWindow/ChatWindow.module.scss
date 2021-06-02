@@ -1,0 +1,69 @@
+
+.chatWindow {
+  --status-height: 24px;
+  --input-height: 48px;
+  --padding: .5em;
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+
+  .chatWindowHistory {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--status-height) + var(--input-height));
+    padding: var(--padding);
+  }
+
+  .chatWindowInput {
+    position: absolute;
+    bottom: var(--status-height);
+    left: 0;
+    right: 0;
+    height: var(--input-height);
+
+    display: flex;
+
+    .chatWindowInputMessage {
+      flex-grow: 1;
+      border: 1px solid #ebebeb;
+
+      input {
+        height: 100%;
+        width: 100%;
+        border-radius: 0;
+        border: none;
+        outline: 0;
+        padding: 0 var(--padding);
+      }
+    }
+
+    .chatWindowInputButton {
+      flex: 0 0 20px;
+
+      button {
+        height: 100%;
+        width: 100%;
+        border-radius: 0;
+        border: none;
+        outline: 0;
+      }
+    }
+  }
+
+  .chatWindowStatus {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--status-height);
+    background: black;
+    color: white;
+    line-height: var(--status-height);
+    padding: 0 var(--padding);
+  }
+}
