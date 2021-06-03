@@ -1,16 +1,12 @@
 import { atom } from 'recoil';
 
-const currentUserNameStateAtom = atom({
+export const currentUserNameStateAtom = atom({
   key: 'current-user-name-state',
   default: '',
 });
 
-const webSocketConnectionStateAtom = atom({
+export const webSocketConnectionStateAtom = atom({
   key: 'web-socket-state',
   default: 'disconnected',
 });
 
-export {
-  currentUserNameStateAtom,
-  webSocketConnectionStateAtom,
-}

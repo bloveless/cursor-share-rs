@@ -1,0 +1,54 @@
+.anotherPersonsCursor {
+    display: inline-block;
+    position: absolute;
+    height: 16px;
+    width: 16px;
+    color: red;
+}
+
+.anotherPersonsCursor span {
+    position: relative;
+    top: -7px;
+    left: 12px;
+    white-space: nowrap;
+}
+
+.anotherPersonsCursor.one {
+    color: var(--color-one);
+}
+
+.anotherPersonsCursor.one svg {
+    fill: var(--color-one);
+}
+
+.anotherPersonsCursor.two {
+    color: var(--color-two);
+}
+
+.anotherPersonsCursor.two svg {
+    fill: var(--color-two);
+}
+
+.anotherPersonsCursor.three {
+    color: var(--color-three);
+}
+
+.anotherPersonsCursor.three svg {
+    fill: var(--color-three);
+}
+
+.anotherPersonsCursor.four {
+    color: var(--color-four);
+}
+
+.anotherPersonsCursor.four svg {
+    fill: var(--color-four);
+}
+
+.anotherPersonsCursor.five {
+    color: var(--color-five);
+}
+
+.anotherPersonsCursor.five svg {
+    fill: var(--color-five);
+}

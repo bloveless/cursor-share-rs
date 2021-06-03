@@ -1,11 +1,11 @@
 namespace: cursor-share
 
 resources:
-- namespace.yaml
-- service.yaml
-- ingress.yaml
-- deployment.yaml
+  - namespace.yaml
+  - service.yaml
+  - ingress.yaml
+  - deployment.yaml
 
 images:
-- name: bloveless/cursor-share-rs
-  newTag: 0.0.1-alpha.2
+  - name: bloveless/cursor-share-rs
+    newTag: 0.0.1-alpha.2

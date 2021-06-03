@@ -3,13 +3,14 @@ import ChatWindowHistory from './components/ChatWindowHistory';
 import ChatWindowStatus from './components/ChatWindowStatus';
 import ChatWindowInput from './components/ChatWindowInput';
 import MouseMoveSender from '../MouseMoveSender';
-import { useRecoilValue } from 'recoil';
 import css from './ChatWindow.module.scss';
 import useChatWebSocket from '../../hooks/useChatWebSocket';
+import {useRecoilValue} from 'recoil';
+import {cursorsAtom} from '../../atoms/cursor';
+import Cursor from './components/Cursor';
 
 const ChatWindow: React.FC<any> = () => {
-  const [messages, setMessages] = useState([]);
-  const { lastJsonMessage, sendJsonMessage, isOpen } = useChatWebSocket();
+  const cursors = useRecoilValue(cursorsAtom);
 
   return (
     <div className={css.chatWindow}>
@@ -17,6 +18,9 @@ const ChatWindow: React.FC<any> = () => {
       <ChatWindowHistory />
       <ChatWindowInput />
       <ChatWindowStatus />
+      {cursors.map((cursor) => (
+        <Cursor key={cursor.id} cursor={cursor} />
+      ))}
     </div>
   )
 };

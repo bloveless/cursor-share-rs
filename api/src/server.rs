@@ -55,6 +55,7 @@ struct BroadcastTextMessage {
     sender_id: Uuid,
     sender_name: String,
     event_type: String,
+    message_id: Uuid,
     message: String,
 }
 
@@ -126,6 +127,7 @@ impl ChatServer {
                     sender_id,
                     sender_name: sender_name.to_string(),
                     event_type: m.event_type,
+                    message_id: Uuid::new_v4(),
                     message: m.message,
                 }),
                 ChatMessage::MouseMessage(m) => serde_json::to_string(&BroadcastMouseMessage {
@@ -157,6 +159,7 @@ impl ChatServer {
                 sender_id: Uuid::nil(),
                 sender_name: sender_name.to_owned(),
                 event_type: text_message.event_type,
+                message_id: Uuid::new_v4(),
                 message: text_message.message,
             }).unwrap();
 
