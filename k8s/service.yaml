@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: cursor-share-api-service
+  namespace: cursor-share
+spec:
+  type: ClusterIP
+  selector:
+    app: cursor-share
+    component: cursor-share-api
+  ports:
+    - name: cursor-share-api
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cursor-share-ui-service
+  namespace: cursor-share
+spec:
+  type: ClusterIP
+  selector:
+    app: cursor-share
+    component: cursor-share-ui
+  ports:
+    - name: cursor-share-ui
+      port: 80
+      targetPort: 80
+

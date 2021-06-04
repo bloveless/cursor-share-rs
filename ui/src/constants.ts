@@ -1,0 +1,1 @@
+export const webSocketUrl = process.env.NODE_ENV === 'production' ? 'wss://cursor-share.brennonloveless.com/api/ws/' : `${(window.location.protocol === "https") ? "wss" : "ws"}://${window.location.hostname}:8080/ws/`;

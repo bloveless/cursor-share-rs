@@ -15,10 +15,18 @@ spec:
   - host: "cursor-share.brennonloveless.com"
     http:
       paths:
-      - pathType: Prefix
-        path: "/"
-        backend:
-          service:
-            name: cursor-share
-            port:
-              number: 8080
+        - path: /api
+          pathType: Prefix
+          backend:
+            service:
+              name: cursor-share-api-service
+              port:
+                number: 8080
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: cursor-share-ui-service
+              port:
+                number: 80
+

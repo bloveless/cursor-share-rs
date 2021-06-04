@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cursor-share-api
+  namespace: cursor-share
+  labels:
+    app: cursor-share
+    component: cursor-share-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cursor-share
+      component: cursor-share-api
+  template:
+    metadata:
+      labels:
+        app: cursor-share
+        component: cursor-share-api
+    spec:
+      containers:
+      - name: cursor-share-api
+        image: bloveless/cursor-share-api
+        ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cursor-share-ui
+  namespace: cursor-share
+  labels:
+    app: cursor-share
+    component: cursor-share-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cursor-share
+      component: cursor-share-ui
+  template:
+    metadata:
+      labels:
+        app: cursor-share
+        component: cursor-share-ui
+    spec:
+      containers:
+        - name: cursor-share-ui
+          image: bloveless/cursor-share-ui
+      restartPolicy: Always
+

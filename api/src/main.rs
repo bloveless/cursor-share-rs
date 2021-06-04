@@ -1,7 +1,6 @@
 use std::time::{Duration, Instant};
 
 use actix::*;
-use actix_files as fs;
 use actix_web::{web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 use uuid::Uuid;
@@ -170,16 +169,8 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(server.clone())
             .wrap(Logger::default())
-            // redirect to websocket.html
-            .service(web::resource("/").route(web::get().to(|| {
-                HttpResponse::Found()
-                    .append_header(("LOCATION", "/static/websocket.html"))
-                    .finish()
-            })))
             // websocket
-            .service(web::resource("/ws/").to(chat_route))
-            // static resources
-            .service(fs::Files::new("/static/", "static/"))
+            .service(web::resource("/api/ws/").to(chat_route))
     })
         .bind("0.0.0.0:8080")?
         .run()
